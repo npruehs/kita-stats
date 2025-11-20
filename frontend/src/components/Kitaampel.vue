@@ -5,7 +5,7 @@
         <h1 class="text-h4 font-weight-bold">Kita-Ampel</h1>
       </v-col>
 
-      <v-col cols="12" md="6">
+      <v-col cols="12">
         <v-select
           v-model="selectedCompany"
           :items="companyOptions"
@@ -16,7 +16,7 @@
         />
       </v-col>
 
-      <v-col cols="12" md="6">
+      <v-col cols="12">
         <v-select
           v-model="selectedKita"
           :items="kitaOptions"
@@ -25,6 +25,17 @@
           item-value="value"
           outlined
           :disabled="!selectedCompany"
+        />
+      </v-col>
+
+      <v-col cols="12">
+        <v-select
+          v-model="selectedCareLevel"
+          :items="careLevelOptions"
+          label="Betreuung"
+          item-title="label"
+          item-value="value"
+          outlined
         />
       </v-col>
     </v-row>
@@ -67,4 +78,12 @@ watch(selectedCompany, () => {
   // Clear selected Kita when company changes
   selectedKita.value = null
 })
+
+const careLevelOptions = [
+  { label: 'gelb (Betreuungsangebot eingeschränkt)', value: 'yellow' },
+  { label: 'orange (min. eine Gruppe geschlossen)', value: 'orange' },
+  { label: 'rot (Einrichtung geschlossen)', value: 'red' },
+]
+
+const selectedCareLevel = ref<string | null>(null)
 </script>
