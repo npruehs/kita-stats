@@ -1,5 +1,5 @@
 <template>
-  <HelloWorld />
+  <Kitaampel />
 </template>
 
 <script lang="ts" setup>
