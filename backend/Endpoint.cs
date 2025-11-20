@@ -1,10 +1,10 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.Functions.Worker.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Azure.Data.Tables;
@@ -14,27 +14,31 @@ namespace Npruehs.KitaStats
 {
     public static class Endpoint
     {
-        [FunctionName("UpdateCareLevel")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+        [Function("UpdateCareLevel")]
+        public static async Task<HttpResponseData> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestData req,
+            FunctionContext context)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            var log = context.GetLogger("UpdateCareLevel");
+            log.LogInformation("Function processed a request.");
 
-            if (!HttpMethods.IsPost(req.Method))
+            if (!string.Equals(req.Method, "POST", StringComparison.OrdinalIgnoreCase))
             {
-                // Keep GET support for a simple health check
-                return new OkObjectResult("UpdateCareLevel endpoint is up. Send POST with JSON payload to record an event.");
+                var ok = req.CreateResponse(HttpStatusCode.OK);
+                await ok.WriteStringAsync("UpdateCareLevel endpoint is up. Send POST with JSON payload to record an event.");
+                return ok;
             }
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             if (string.IsNullOrWhiteSpace(requestBody))
             {
                 log.LogWarning("Empty request body.");
-                return new BadRequestObjectResult("Request body is empty.");
+                var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                await bad.WriteStringAsync("Request body is empty.");
+                return bad;
             }
 
-            Payload payload = null;
+            Payload payload;
             try
             {
                 payload = JsonConvert.DeserializeObject<Payload>(requestBody);
@@ -42,7 +46,9 @@ namespace Npruehs.KitaStats
             catch (Exception ex)
             {
                 log.LogWarning(ex, "Failed to deserialize request body.");
-                return new BadRequestObjectResult("Invalid JSON payload.");
+                var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                await bad.WriteStringAsync("Invalid JSON payload.");
+                return bad;
             }
 
             if (payload == null
@@ -52,17 +58,18 @@ namespace Npruehs.KitaStats
                 || string.IsNullOrWhiteSpace(payload.UserId))
             {
                 log.LogWarning("Missing required fields in payload: {@Payload}", payload);
-                return new BadRequestObjectResult("Payload must include 'company', 'kita', 'careLevel' and 'userId'.");
+                var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                await bad.WriteStringAsync("Payload must include 'company', 'kita', 'careLevel' and 'userId'.");
+                return bad;
             }
 
             var now = DateTime.UtcNow;
 
-            // Prepare table client
             string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
             if (string.IsNullOrWhiteSpace(storageConnectionString))
             {
                 log.LogError("AzureWebJobsStorage connection string is not configured.");
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return req.CreateResponse(HttpStatusCode.InternalServerError);
             }
 
             try
@@ -71,7 +78,6 @@ namespace Npruehs.KitaStats
                 var tableClient = new TableClient(storageConnectionString, tableName);
                 await tableClient.CreateIfNotExistsAsync();
 
-                // Use Company as PartitionKey and a GUID as RowKey
                 var entity = new TableEntity(payload.Company, Guid.NewGuid().ToString())
                 {
                     { "Kita", payload.Kita },
@@ -85,18 +91,18 @@ namespace Npruehs.KitaStats
                 log.LogInformation("Stored care event: Company={Company}, Kita={Kita}, CareLevel={CareLevel}, UserId={UserId}, Time={Time}",
                     payload.Company, payload.Kita, payload.CareLevel, payload.UserId, now);
 
-                // 201 Created - resource created
-                return new StatusCodeResult(StatusCodes.Status201Created);
+                var created = req.CreateResponse(HttpStatusCode.Created);
+                return created;
             }
             catch (RequestFailedException rfe)
             {
                 log.LogError(rfe, "Azure Table storage request failed.");
-                return new StatusCodeResult(StatusCodes.Status502BadGateway);
+                return req.CreateResponse(HttpStatusCode.BadGateway);
             }
             catch (Exception ex)
             {
                 log.LogError(ex, "Unexpected error while processing UpdateCareLevel.");
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return req.CreateResponse(HttpStatusCode.InternalServerError);
             }
         }
 
