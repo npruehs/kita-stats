@@ -2,7 +2,7 @@
   <v-container class="fill-height" max-width="900">
     <v-row align="center" justify="center">
       <v-col cols="12" class="text-center mb-6">
-        <h1 class="text-h4 font-weight-bold">Kitaampel</h1>
+        <h1 class="text-h4 font-weight-bold">Kita-Ampel</h1>
       </v-col>
 
       <v-col cols="12" md="6">
