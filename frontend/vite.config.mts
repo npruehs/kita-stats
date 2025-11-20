@@ -14,6 +14,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/kita-stats/',
   plugins: [
     VueRouter({
       dts: 'src/typed-router.d.ts',
