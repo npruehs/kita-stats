@@ -38,6 +38,23 @@
           outlined
         />
       </v-col>
+
+      <v-col cols="12" class="text-center mt-4">
+        <v-btn
+          color="primary"
+          @click="onSubmit"
+          :disabled="!selectedCompany || !selectedKita || !selectedCareLevel"
+        >
+          Abschicken
+        </v-btn>
+      </v-col>
+
+      <v-snackbar v-model="showSnackbar" location="bottom" timeout="3000">
+        Meldung erfolgreich erfasst!
+        <template #actions>
+          <v-btn variant="text" color="white" @click="showSnackbar = false">OK</v-btn>
+        </template>
+      </v-snackbar>
     </v-row>
   </v-container>
 </template>
@@ -86,4 +103,11 @@ const careLevelOptions = [
 ]
 
 const selectedCareLevel = ref<string | null>(null)
+
+const showSnackbar = ref(false)
+
+function onSubmit() {
+  // Placeholder for future submit logic — show success message for now
+  showSnackbar.value = true
+}
 </script>
