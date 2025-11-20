@@ -62,14 +62,19 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 
+// Current values
+const selectedCompany = ref<string | null>(null)
+const selectedKita = ref<string | null>(null)
+const selectedCareLevel = ref<string | null>(null)
+
+const showSnackbar = ref(false)
+
+// Static data
 const companyOptions = [
   { label: 'Ballin', value: 'Ballin' },
   { label: 'Elbkinder', value: 'Elbkinder' },
   { label: 'Kinderzimmer', value: 'Kinderzimmer' },
 ]
-
-const selectedCompany = ref<string | null>(null)
-const selectedKita = ref<string | null>(null)
 
 const kitasByCompany: Record<string, Array<{ label: string; value: string }>> = {
   Ballin: [
@@ -86,6 +91,13 @@ const kitasByCompany: Record<string, Array<{ label: string; value: string }>> = 
   ],
 }
 
+const careLevelOptions = [
+  { label: 'gelb (Betreuungsangebot eingeschränkt)', value: 'yellow' },
+  { label: 'orange (min. eine Gruppe geschlossen)', value: 'orange' },
+  { label: 'rot (Einrichtung geschlossen)', value: 'red' },
+]
+
+// UI logic
 const kitaOptions = computed(() => {
   if (!selectedCompany.value) return []
   return kitasByCompany[selectedCompany.value] ?? []
@@ -96,16 +108,7 @@ watch(selectedCompany, () => {
   selectedKita.value = null
 })
 
-const careLevelOptions = [
-  { label: 'gelb (Betreuungsangebot eingeschränkt)', value: 'yellow' },
-  { label: 'orange (min. eine Gruppe geschlossen)', value: 'orange' },
-  { label: 'rot (Einrichtung geschlossen)', value: 'red' },
-]
-
-const selectedCareLevel = ref<string | null>(null)
-
-const showSnackbar = ref(false)
-
+// Handlers
 function onSubmit() {
   // Placeholder for future submit logic — show success message for now
   showSnackbar.value = true
