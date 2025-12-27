@@ -73,7 +73,7 @@
 			"options": {
 				"cwd": "${workspaceFolder}/backend/bin/Debug/net8.0"
 			},
-			"command": "host start",
+			"command": "host start --cors http://localhost:3000",
 			"isBackground": true,
 			"problemMatcher": "$func-dotnet-watch"
 		}
