@@ -49,10 +49,16 @@
         </v-btn>
       </v-col>
 
-      <v-snackbar v-model="showSnackbar" location="bottom" timeout="3000">
+      <v-snackbar v-model="showSuccess" location="bottom" timeout="3000">
         Meldung erfolgreich erfasst!
         <template #actions>
-          <v-btn variant="text" color="white" @click="showSnackbar = false">OK</v-btn>
+          <v-btn variant="text" color="white" @click="showSuccess = false">OK</v-btn>
+        </template>
+      </v-snackbar>
+      <v-snackbar v-model="showError" color="red" location="bottom" timeout="4000">
+        Fehler beim Senden der Meldung!
+        <template #actions>
+          <v-btn variant="text" color="white" @click="showError = false">OK</v-btn>
         </template>
       </v-snackbar>
     </v-row>
@@ -62,12 +68,24 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 
+// UUID generator
+function getOrCreateUserId() {
+  const key = 'kitastats-user-id';
+  let userId = localStorage.getItem(key);
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem(key, userId);
+  }
+  return userId;
+}
+
 // Current values
 const selectedCompany = ref<string | null>(null)
 const selectedKita = ref<string | null>(null)
 const selectedCareLevel = ref<string | null>(null)
 
-const showSnackbar = ref(false)
+const showSuccess = ref(false)
+const showError = ref(false)
 
 // Static data
 const companyOptions = [
@@ -92,9 +110,9 @@ const kitasByCompany: Record<string, Array<{ label: string; value: string }>> = 
 }
 
 const careLevelOptions = [
-  { label: 'gelb (Betreuungsangebot eingeschränkt)', value: 'yellow' },
-  { label: 'orange (min. eine Gruppe geschlossen)', value: 'orange' },
-  { label: 'rot (Einrichtung geschlossen)', value: 'red' },
+  { label: 'gelb (Betreuungsangebot eingeschränkt)', value: '1' },
+  { label: 'orange (min. eine Gruppe geschlossen)', value: '2' },
+  { label: 'rot (Einrichtung geschlossen)', value: '3' },
 ]
 
 // UI logic
@@ -111,6 +129,25 @@ watch(selectedCompany, () => {
 // Handlers
 function onSubmit() {
   // Placeholder for future submit logic — show success message for now
-  showSnackbar.value = true
+  const userId = getOrCreateUserId();
+  const payload = {
+    userId,
+    company: selectedCompany.value,
+    kita: selectedKita.value,
+    careLevel: selectedCareLevel.value,
+  };
+  fetch('http://localhost:7071/api/UpdateCareLevel', {
+  //fetch('https://kitastats-adagcbcubec5bzhz.germanywestcentral-01.azurewebsites.net/api/UpdateCareLevel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('Network error');
+      showSuccess.value = true;
+    })
+    .catch(() => {
+      showError.value = true;
+    });
 }
 </script>
